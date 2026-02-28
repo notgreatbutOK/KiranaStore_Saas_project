@@ -9,9 +9,9 @@ router.post("/", auth, async (req, res) => {
     const product = await Product.create({
       name: req.body.name,
       price: req.body.price,
+      quantity: req.body.quantity,
       owner: req.user,
     });
-
     res.json(product);
   } catch (err) {
     res.status(500).json(err);
@@ -23,6 +23,30 @@ router.get("/", auth, async (req, res) => {
   try {
     const products = await Product.find({ owner: req.user });
     res.json(products);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// UPDATE QUANTITY
+router.patch("/:id", auth, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { quantity: req.body.quantity },
+      { new: true }
+    );
+    res.json(product);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// DELETE PRODUCT
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Product deleted" });
   } catch (err) {
     res.status(500).json(err);
   }

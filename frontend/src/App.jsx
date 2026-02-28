@@ -1,8 +1,6 @@
-
-
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import StoreDashboard from "./pages/StoreDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import Products from "./pages/Products";
@@ -16,6 +14,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Store Routes */}
         <Route path="/dashboard" element={
@@ -61,5 +60,3 @@ function App() {
 }
 
 export default App;
-
-

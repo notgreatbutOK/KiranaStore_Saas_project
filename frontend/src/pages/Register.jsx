@@ -2,41 +2,44 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-export default function Login() {
+export default function Register() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        { email, password }
-      );
-
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-
-      if (res.data.role === "superadmin") {
-        navigate("/superadmin");
-      } else {
-        navigate("/dashboard");
-      }
+      await axios.post("http://localhost:5000/api/auth/register", {
+        name,
+        email,
+        password,
+      });
+      alert("Store registered! Wait for admin approval.");
+      navigate("/");
     } catch (err) {
-      alert(err.response?.data?.msg || "Login failed");
+      alert(err.response?.data?.msg || "Registration failed");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded shadow w-96">
-
+        
         <h2 className="text-2xl font-bold text-center text-blue-900 mb-2">
           Kirana SaaS
         </h2>
-        <p className="text-center text-gray-500 mb-6">
-          Login to your store
-        </p>
+        <p className="text-center text-gray-500 mb-6">Register your store</p>
+
+        <div className="mb-4">
+          <label className="block text-gray-600 mb-1">Store Name</label>
+          <input
+            className="w-full border p-2 rounded"
+            placeholder="My Kirana Store"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
 
         <div className="mb-4">
           <label className="block text-gray-600 mb-1">Email</label>
@@ -61,16 +64,16 @@ export default function Login() {
         </div>
 
         <button
-          onClick={handleLogin}
+          onClick={handleRegister}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          Login
+          Register Store
         </button>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          New store?{" "}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Register here
+          Already have an account?{" "}
+          <Link to="/" className="text-blue-600 hover:underline">
+            Login
           </Link>
         </p>
 

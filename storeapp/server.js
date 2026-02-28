@@ -65,6 +65,7 @@ app.use("/api/customers", require("./routes/customerRoutes"));
 app.use("/api/udhaar", require("./routes/udhaarRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/superadmin", require("./routes/superAdminRoutes"));
+app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 
 
 // =======================
