@@ -10,9 +10,21 @@ router.get("/", auth, async (req, res) => {
   try {
     const storeId = new mongoose.Types.ObjectId(req.user);
 
-    // Total revenue
+    
+    
+    // Total revenue (cash orders + udhaar payments received)
     const orders = await Order.find({ storeId: req.user });
-    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const cashRevenue = orders
+    .filter(o => o.paymentType === "cash")
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+    
+    const Udhaar = require("../models/Udhaar");
+    const udhaarPayments = await Udhaar.find({ 
+      storeId: req.user, 
+      type: "payment" 
+    });
+    const udhaarRevenue = udhaarPayments.reduce((sum, u) => sum + u.amount, 0);
+    const totalRevenue = cashRevenue + udhaarRevenue;
 
     // Recent orders
     const recentOrders = await Order.find({ storeId: req.user })
