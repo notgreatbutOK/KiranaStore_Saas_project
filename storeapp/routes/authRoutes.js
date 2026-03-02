@@ -6,9 +6,7 @@ const Admin = require("../models/Admin");
 
 const JWT_SECRET = "SECRET123";
 
-// ===============================
-// REGISTER (Store Only)
-// ===============================
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -23,7 +21,9 @@ router.post("/register", async (req, res) => {
       email,
       password: hash,
       role: "store",
-      status: "pending"
+      status: "pending",
+      trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      subscriptionPlan: "trial"
     });
 
     res.json({
@@ -39,28 +39,37 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ===============================
 // LOGIN
-// ===============================
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(400).json({ msg: "No user" });
+    if (!admin) return res.status(400).json({ msg: "No user found" });
 
     const match = await bcrypt.compare(password, admin.password);
     if (!match) return res.status(400).json({ msg: "Wrong password" });
 
-    // 🔥 Store status check
     if (admin.role === "store") {
-
       if (admin.status === "pending") {
         return res.status(403).json({ msg: "Store not approved yet" });
       }
-
       if (admin.status === "suspended") {
         return res.status(403).json({ msg: "Store suspended by platform" });
+      }
+
+      // Check trial expiry
+      if (admin.subscriptionPlan === "trial") {
+        if (new Date() > admin.trialEndDate) {
+          return res.status(403).json({ msg: "Your 14 day trial has expired. Please subscribe to continue." });
+        }
+      }
+
+      // Check subscription expiry
+      if (["1month", "3months", "6months", "1year"].includes(admin.subscriptionPlan)) {
+        if (new Date() > admin.subscriptionEndDate) {
+          return res.status(403).json({ msg: "Your subscription has expired. Please renew to continue." });
+        }
       }
     }
 
@@ -69,10 +78,20 @@ router.post("/login", async (req, res) => {
       JWT_SECRET
     );
 
+    // Calculate trial days remaining
+    let trialDaysLeft = null;
+    if (admin.subscriptionPlan === "trial") {
+      const diff = admin.trialEndDate - new Date();
+      trialDaysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+
     res.json({
       token,
       role: admin.role,
-      status: admin.status
+      name: admin.name,
+      status: admin.status,
+      subscriptionPlan: admin.subscriptionPlan,
+      trialDaysLeft
     });
 
   } catch (err) {

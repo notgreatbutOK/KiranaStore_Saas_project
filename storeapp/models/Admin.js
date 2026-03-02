@@ -1,46 +1,33 @@
 const mongoose = require("mongoose");
 
 const adminSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-
+  name: String,
+  email: String,
+  password: String,
   role: {
     type: String,
     enum: ["store", "superadmin"],
     default: "store"
   },
-
   status: {
     type: String,
     enum: ["pending", "active", "suspended"],
     default: "pending"
   },
-
-  trialStartDate: {
-    type: Date
-  },
-
   trialEndDate: {
-    type: Date
+    type: Date,
+    default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
   },
-
-  subscriptionStatus: {
+  subscriptionPlan: {
     type: String,
-    enum: ["trial", "active", "expired"],
+    enum: ["trial", "1month", "3months", "6months", "1year", "none"],
     default: "trial"
+  },
+  
+  subscriptionEndDate: {
+    type: Date,
+    default: null
   }
-
 }, { timestamps: true });
 
 module.exports = mongoose.model("Admin", adminSchema);

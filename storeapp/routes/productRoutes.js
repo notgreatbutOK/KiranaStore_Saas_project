@@ -33,7 +33,7 @@ router.patch("/:id", auth, async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { quantity: req.body.quantity },
+      { quantity: req.body.quantity, price: req.body.price },
       { new: true }
     );
     res.json(product);

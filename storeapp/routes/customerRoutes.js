@@ -27,4 +27,14 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+// DELETE CUSTOMER
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    await Customer.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Customer deleted" });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 module.exports = router;
