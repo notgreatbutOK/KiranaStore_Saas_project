@@ -10,7 +10,7 @@ const { sendMessage } = require("../services/whatsappService");
 const sessions = {};
 
 // VERIFY WEBHOOK
-router.get("/webhook", (req, res) => {
+router.get("/", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -21,6 +21,11 @@ router.get("/webhook", (req, res) => {
   } else {
     res.sendStatus(403);
   }
+});
+
+// RECEIVE MESSAGE
+router.post("/", async (req, res) => {
+  // ... rest of the code
 });
 
 // RECEIVE MESSAGE

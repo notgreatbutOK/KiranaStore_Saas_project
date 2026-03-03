@@ -10,6 +10,8 @@ export default function SuperAdminDashboard() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newMobile, setNewMobile] = useState("");
+  const [newPhoneNumberId, setNewPhoneNumberId] = useState("");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -32,15 +34,15 @@ export default function SuperAdminDashboard() {
   };
 
   const createStore = async () => {
-    if (!newName || !newEmail || !newPassword) return alert("Fill all fields!");
+    if (!newName || !newEmail || !newPassword || !newMobile) return alert("Fill all fields!");
     try {
       await axios.post(
         "http://localhost:5000/api/superadmin/create-store",
-        { name: newName, email: newEmail, password: newPassword },
+        { name: newName, email: newEmail, password: newPassword, mobileNumber: newMobile, whatsappPhoneNumberId: newPhoneNumberId },
         { headers }
       );
       alert(`Store created! Share these creds:\nEmail: ${newEmail}\nPassword: ${newPassword}`);
-      setNewName(""); setNewEmail(""); setNewPassword("");
+      setNewName(""); setNewEmail(""); setNewPassword(""); setNewMobile(""); setNewPhoneNumberId("");
       setShowCreateForm(false);
       fetchAll();
     } catch (err) {
@@ -160,7 +162,7 @@ export default function SuperAdminDashboard() {
                 onChange={(e) => setNewEmail(e.target.value)}
               />
             </div>
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="block text-gray-600 mb-1">Password</label>
               <input
                 className="w-full border p-2 rounded"
@@ -168,6 +170,25 @@ export default function SuperAdminDashboard() {
                 placeholder="Set a password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="block text-gray-600 mb-1">Mobile Number</label>
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="e.g. 15551941598"
+                value={newMobile}
+                onChange={(e) => setNewMobile(e.target.value)}
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-600 mb-1">WhatsApp Phone Number ID</label>
+              <p className="text-gray-400 text-xs mb-1">From Meta Developer Dashboard</p>
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="e.g. 1004266589438346"
+                value={newPhoneNumberId}
+                onChange={(e) => setNewPhoneNumberId(e.target.value)}
               />
             </div>
             <button
@@ -198,6 +219,7 @@ export default function SuperAdminDashboard() {
             <tr>
               <th className="p-4 text-left text-sm text-gray-600">Store</th>
               <th className="p-4 text-left text-sm text-gray-600">Email</th>
+              <th className="p-4 text-left text-sm text-gray-600">Mobile</th>
               <th className="p-4 text-left text-sm text-gray-600">Status</th>
               <th className="p-4 text-left text-sm text-gray-600">Subscription</th>
               <th className="p-4 text-left text-sm text-gray-600">Actions</th>
@@ -216,6 +238,7 @@ export default function SuperAdminDashboard() {
                   </button>
                 </td>
                 <td className="p-4 text-gray-500 text-sm">{store.email}</td>
+                <td className="p-4 text-gray-500 text-sm">{store.mobileNumber || "-"}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded text-xs font-semibold ${
                     store.status === "active" ? "bg-green-100 text-green-700" :

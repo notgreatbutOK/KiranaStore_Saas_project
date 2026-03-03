@@ -62,7 +62,11 @@ router.get("/store/:storeId", auth, superAdmin, async (req, res) => {
 // Create store
 router.post("/create-store", auth, superAdmin, async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, mobileNumber, whatsappPhoneNumberId } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ msg: "All fields are required" });
+    }
 
     const exist = await Admin.findOne({ email });
     if (exist) return res.status(400).json({ msg: "Email already exists" });
@@ -71,6 +75,8 @@ router.post("/create-store", auth, superAdmin, async (req, res) => {
     const store = await Admin.create({
       name,
       email,
+      mobileNumber,
+      whatsappPhoneNumberId,
       password: hash,
       role: "store",
       status: "active",

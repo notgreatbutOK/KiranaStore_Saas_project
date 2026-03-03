@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 const adminSchema = new mongoose.Schema({
   name: String,
 
+  mobileNumber: {
+    type: String,
+    default: null
+  },
+
   email: {
     type: String,
     required: true,
@@ -15,6 +20,11 @@ const adminSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
+  },
+
+  whatsappPhoneNumberId: {
+  type: String,
+  default: null
   },
 
   role: {
