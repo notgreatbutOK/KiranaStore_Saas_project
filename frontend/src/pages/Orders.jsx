@@ -10,9 +10,11 @@ export default function Orders() {
   const [selectedProduct, setSelectedProduct] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [paymentType, setPaymentType] = useState("cash");
+  const [receipt, setReceipt] = useState(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
+  const storeName = localStorage.getItem("name") || "Kirana Store";
 
   useEffect(() => {
     fetchAll();
@@ -31,7 +33,7 @@ export default function Orders() {
 
   const createOrder = async () => {
     try {
-      await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/api/orders",
         {
           customerId: selectedCustomer,
@@ -40,16 +42,93 @@ export default function Orders() {
         },
         { headers }
       );
-      alert("Order Created Successfully!");
+      setReceipt(res.data);
       fetchAll();
     } catch (err) {
       alert(err.response?.data?.msg || "Order failed");
     }
   };
 
+  const printReceipt = () => {
+    window.print();
+  };
+
+  const selectedProductData = products.find(p => p._id === selectedProduct);
+  const selectedCustomerData = customers.find(c => c._id === selectedCustomer);
+
   return (
     <Layout>
       <h2 className="text-2xl font-bold mb-6">Orders</h2>
+
+      {/* Receipt Popup */}
+      {receipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-lg p-8 w-96 print:shadow-none" id="receipt">
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold">{storeName}</h2>
+              <p className="text-gray-500 text-sm">Receipt</p>
+              <p className="text-gray-400 text-xs">{new Date().toLocaleDateString("en-IN")}</p>
+            </div>
+
+            <hr className="my-3" />
+
+            <div className="mb-3">
+              <p className="text-sm text-gray-500">Customer</p>
+              <p className="font-semibold">{selectedCustomerData?.name || "N/A"}</p>
+            </div>
+
+            <table className="w-full text-sm mb-3">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-1">Item</th>
+                  <th className="text-right py-1">Qty</th>
+                  <th className="text-right py-1">Price</th>
+                  <th className="text-right py-1">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items?.map((item, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="py-1">{selectedProductData?.name || "Product"}</td>
+                    <td className="text-right py-1">{item.quantity}</td>
+                    <td className="text-right py-1">₹{item.price}</td>
+                    <td className="text-right py-1">₹{item.quantity * item.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex justify-between font-bold text-lg mt-2">
+              <span>Total</span>
+              <span>₹ {receipt.totalAmount}</span>
+            </div>
+
+            <div className="mt-2 text-sm text-gray-500">
+              Payment: <span className={`font-semibold ${receipt.paymentType === "cash" ? "text-green-600" : "text-red-500"}`}>
+                {receipt.paymentType === "cash" ? "Cash" : "Udhaar"}
+              </span>
+            </div>
+
+            <hr className="my-4" />
+            <p className="text-center text-xs text-gray-400">Thank you for shopping! 🙏</p>
+
+            <div className="flex gap-3 mt-6 print:hidden">
+              <button
+                onClick={printReceipt}
+                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+              >
+                🖨️ Print
+              </button>
+              <button
+                onClick={() => setReceipt(null)}
+                className="flex-1 bg-gray-400 text-white py-2 rounded hover:bg-gray-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Order Form */}
       <div className="bg-white shadow rounded p-6 max-w-md mb-8">
@@ -146,7 +225,7 @@ export default function Orders() {
                 </span>
               </td>
               <td className="p-3 text-sm text-gray-500">
-                {new Date(o.createdAt).toLocaleDateString()}
+                {new Date(o.createdAt).toLocaleDateString("en-IN")}
               </td>
             </tr>
           ))}

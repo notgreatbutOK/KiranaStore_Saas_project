@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import axios from "axios";
 
 export default function Login() {
@@ -16,6 +16,9 @@ export default function Login() {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
+      localStorage.setItem("subscriptionPlan", res.data.subscriptionPlan);
+      localStorage.setItem("trialDaysLeft", res.data.trialDaysLeft || "");
+      localStorage.setItem("name", res.data.name);
 
       if (res.data.role === "superadmin") {
         navigate("/superadmin");
@@ -23,7 +26,12 @@ export default function Login() {
         navigate("/dashboard");
       }
     } catch (err) {
-      alert(err.response?.data?.msg || "Login failed");
+      const msg = err.response?.data?.msg || "Login failed";
+      if (msg.includes("trial has expired") || msg.includes("subscription has expired")) {
+        navigate("/trial-expired");
+      } else {
+        alert(msg);
+      }
     }
   };
 
@@ -67,12 +75,7 @@ export default function Login() {
           Login
         </button>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          New store?{" "}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Register here
-          </Link>
-        </p>
+        
 
       </div>
     </div>

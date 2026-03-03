@@ -4,6 +4,7 @@ const auth = require("../middleware/authMiddleware");
 const superAdmin = require("../middleware/superAdminMiddleware");
 const Admin = require("../models/Admin");
 const Order = require("../models/Order");
+const Udhaar = require("../models/Udhaar");
 const bcrypt = require("bcryptjs");
 
 // Get all stores
@@ -16,14 +17,68 @@ router.get("/stores", auth, superAdmin, async (req, res) => {
   }
 });
 
-// Get total platform revenue (cash only)
+// Get total platform revenue
 router.get("/revenue", auth, superAdmin, async (req, res) => {
   try {
-    const result = await Order.aggregate([
+    const cashResult = await Order.aggregate([
       { $match: { paymentType: "cash" } },
-      { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } }
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } }
     ]);
-    res.json(result[0] || { totalRevenue: 0 });
+    const cashRevenue = cashResult[0]?.total || 0;
+
+    const udhaarResult = await Udhaar.aggregate([
+      { $match: { type: "payment" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const udhaarRevenue = udhaarResult[0]?.total || 0;
+
+    res.json({ totalRevenue: cashRevenue + udhaarRevenue });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Get single store details
+router.get("/store/:storeId", auth, superAdmin, async (req, res) => {
+  try {
+    const Product = require("../models/Product");
+    const Customer = require("../models/Customer");
+
+    const store = await Admin.findById(req.params.storeId).select("-password");
+    const products = await Product.find({ owner: req.params.storeId });
+    const customers = await Customer.find({ storeId: req.params.storeId });
+    const orders = await Order.find({ storeId: req.params.storeId });
+
+    const revenue = orders
+      .filter(o => o.paymentType === "cash")
+      .reduce((sum, o) => sum + o.totalAmount, 0);
+
+    res.json({ store, totalProducts: products.length, totalCustomers: customers.length, totalOrders: orders.length, revenue });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// Create store
+router.post("/create-store", auth, superAdmin, async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const exist = await Admin.findOne({ email });
+    if (exist) return res.status(400).json({ msg: "Email already exists" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const store = await Admin.create({
+      name,
+      email,
+      password: hash,
+      role: "store",
+      status: "active",
+      trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      subscriptionPlan: "trial"
+    });
+
+    res.json({ msg: "Store created!", store });
   } catch (err) {
     res.status(500).json(err);
   }

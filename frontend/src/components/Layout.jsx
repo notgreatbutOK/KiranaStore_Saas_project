@@ -17,9 +17,21 @@ export default function Layout({ children }) {
       <div className="w-64 bg-blue-900 text-white flex flex-col">
 
         {/* Logo */}
-        <div className="p-5 text-xl font-bold border-b border-blue-700">
-          Kirana SaaS
-        </div>
+        <div className="p-5 border-b border-blue-700">
+          <h1 className="text-xl font-bold">Kirana SaaS</h1>
+          {role !== "superadmin" && (
+            <p className="text-xs text-blue-300 mt-1">
+              🏪 {localStorage.getItem("name") || "My Store"}
+              </p>
+            )}
+            </div>
+          
+          {/* Trial Banner */}
+          {localStorage.getItem("subscriptionPlan") === "trial" && role !== "superadmin" && (
+            <div className="bg-yellow-500 text-white text-xs text-center py-2 px-3">
+              ⏳ Trial: {localStorage.getItem("trialDaysLeft")} days left
+              </div>
+            )}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-3">

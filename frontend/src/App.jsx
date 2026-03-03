@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import StoreDashboard from "./pages/StoreDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import Products from "./pages/Products";
@@ -8,13 +7,17 @@ import Customers from "./pages/Customers";
 import Orders from "./pages/Orders";
 import Udhaar from "./pages/Udhaar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TrialExpired from "./pages/TrialExpired";
+import StoreDetails from "./pages/StoreDetails";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+        <Route path="/trial-expired" element={<TrialExpired />} />
         <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+       
 
         {/* Store Routes */}
         <Route path="/dashboard" element={
@@ -53,6 +56,12 @@ function App() {
             <SuperAdminDashboard />
           </ProtectedRoute>
         } />
+
+        <Route path="/superadmin/store/:storeId" element={
+          <ProtectedRoute role="superadmin">
+            <StoreDetails />
+            </ProtectedRoute>
+          } />
 
       </Routes>
     </BrowserRouter>
