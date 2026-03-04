@@ -108,15 +108,45 @@ app.post("/webhook", async (req, res) => {
         await sendMessage(from, `👋 Welcome to ${store.name}!\n\nWhat's your name?`);
         return;
       }
+
       if (sessions[from]?.step === "get_name") {
+        sessions[from] = { step: "get_email", name: body };
+        await sendMessage(from, `Nice to meet you ${body}! 😊\n\nWhat's your email address?\n(Type *skip* to skip)`);
+        return;
+      }
+
+      if (sessions[from]?.step === "get_email") {
+        const customerName = sessions[from].name;
+        const customerEmail = bodyLower === "skip" ? null : body;
+
         customer = await Customer.create({
           storeId,
-          name: body,
+          name: customerName,
           phone: phoneStripped,
+          email: customerEmail,
           totalDue: 0
         });
+
+        // Send welcome email
+        if (customerEmail) {
+          try {
+            await sendMail(
+              customerEmail,
+              `Welcome to ${store.name}! 🎉`,
+              `<div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>Welcome ${customerName}! 👋</h2>
+                <p>You have been registered as a customer at <strong>${store.name}</strong>.</p>
+                <p>You can now place orders directly on WhatsApp!</p>
+                <p>Thank you for choosing us! 🙏</p>
+              </div>`
+            );
+          } catch (e) {
+            console.log("Welcome email failed:", e.message);
+          }
+        }
+
         sessions[from] = { step: "just_registered", registeredAt: Date.now() };
-        await sendMessage(from, `✅ Welcome ${body}! Type *hi* to see our products 🙂`);
+        await sendMessage(from, `✅ Welcome ${customerName}! Type *hi* to see our products 🙂`);
         return;
       }
     }
@@ -249,15 +279,16 @@ app.post("/webhook", async (req, res) => {
 
       // Refresh customer to get latest due
       customer = await Customer.findById(customer._id);
-//create order
+
+      // Create order
       await Order.create({
         storeId,
         customerId: customer._id,
         paymentType: bodyLower,
         items: cart.map(i => ({ productId: i.productId, quantity: i.qty, price: i.price })),
-      totalAmount: grandTotal,
-      status: bodyLower === "cash" ? "delivered" : "pending"
-    });
+        totalAmount: grandTotal,
+        status: bodyLower === "cash" ? "delivered" : "pending"
+      });
 
       // Notify store admin
       try {
@@ -265,8 +296,7 @@ app.post("/webhook", async (req, res) => {
         await sendMail(
           store.email,
           `🛒 New WhatsApp Order from ${customer.name}`,
-          `
-          <div style="font-family: Arial, sans-serif; padding: 20px;">
+          `<div style="font-family: Arial, sans-serif; padding: 20px;">
             <h2>🛒 New WhatsApp Order!</h2>
             <p><strong>Customer:</strong> ${customer.name}</p>
             <p><strong>Phone:</strong> ${customer.phone}</p>
@@ -275,8 +305,7 @@ app.post("/webhook", async (req, res) => {
             <p><strong>Total:</strong> ₹${grandTotal}</p>
             <p><strong>Payment:</strong> ${bodyLower === "cash" ? "💵 Cash" : "📒 Udhaar"}</p>
             <p>Login to dashboard to update order status! 🙏</p>
-          </div>
-          `
+          </div>`
         );
       } catch (e) {
         console.log("WhatsApp order notification failed:", e.message);
