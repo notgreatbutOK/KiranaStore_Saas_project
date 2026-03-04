@@ -220,7 +220,15 @@ app.post("/webhook", async (req, res) => {
         cartText += `• ${item.productName} x${item.qty} = ₹${item.total}\n`;
         grandTotal += item.total;
       });
-      cartText += `\n💰 Grand Total: ₹${grandTotal}\n\nPay with *cash* or *udhaar*?`;
+
+      cartText += `\n💰 Order Total: ₹${grandTotal}`;
+
+      if (customer.totalDue > 0) {
+        cartText += `\n⚠️ Pending Due: ₹${customer.totalDue}`;
+        cartText += `\n💸 Total Payable: ₹${grandTotal + customer.totalDue}`;
+      }
+
+      cartText += `\n\nPay with *cash* or *udhaar*?`;
 
       sessions[from].step = "confirm_payment";
       sessions[from].grandTotal = grandTotal;
@@ -238,6 +246,9 @@ app.post("/webhook", async (req, res) => {
 
       const cart = sessions[from].cart;
       const grandTotal = sessions[from].grandTotal;
+
+      // Refresh customer to get latest due
+      customer = await Customer.findById(customer._id);
 //create order
       await Order.create({
         storeId,
@@ -293,6 +304,9 @@ app.post("/webhook", async (req, res) => {
       receipt += `\n💰 Total: ₹${grandTotal}\nPayment: ${bodyLower === "cash" ? "💵 Cash" : "📒 Udhaar"}\n\nThank you! 🙏`;
 
       sessions[from] = { step: "idle", cart: [] };
+      if (bodyLower === "udhaar") {
+        receipt += `\n\n🚚 Your order is on the way! We'll notify you once delivered.`;
+      }
       await sendMessage(from, receipt);
       return;
     }

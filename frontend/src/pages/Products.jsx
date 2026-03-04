@@ -13,6 +13,7 @@ export default function Products() {
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("pieces");
   const [category, setCategory] = useState("General");
+  const [image, setImage] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [editPrice, setEditPrice] = useState("");
@@ -33,12 +34,18 @@ export default function Products() {
 
   const addProduct = async () => {
     if (!name || !price || !quantity) return alert("Fill all fields!");
-    await axios.post(
-      "http://localhost:5000/api/products",
-      { name, price: Number(price), quantity: Number(quantity), unit, category },
-      { headers }
-    );
-    setName(""); setPrice(""); setQuantity(""); setUnit("pieces"); setCategory("General");
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("price", price);
+    formData.append("quantity", quantity);
+    formData.append("unit", unit);
+    formData.append("category", category);
+    if (image) formData.append("image", image);
+
+    await axios.post("http://localhost:5000/api/products", formData, {
+      headers: { ...headers, "Content-Type": "multipart/form-data" }
+    });
+    setName(""); setPrice(""); setQuantity(""); setUnit("pieces"); setCategory("General"); setImage(null);
     fetchProducts();
   };
 
@@ -77,47 +84,63 @@ export default function Products() {
       {/* Add Product Form */}
       <div className="bg-white shadow rounded p-4 mb-6">
         <h3 className="font-bold mb-3">Add New Product</h3>
-        <div className="flex gap-3 flex-wrap">
-          <input
-            className="border p-2 rounded"
-            placeholder="Product Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            className="border p-2 rounded w-28"
-            placeholder="Price ₹"
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-          <input
-            className="border p-2 rounded w-28"
-            placeholder="Quantity"
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-          <select
-            className="border p-2 rounded"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          >
-            <option value="pieces">Pieces</option>
-            <option value="kg">KG</option>
-            <option value="grams">Grams</option>
-            <option value="liters">Liters</option>
-            <option value="ml">ML</option>
-          </select>
-          <select
-            className="border p-2 rounded"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+        <div className="flex gap-3 flex-wrap items-end">
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Name</label>
+            <input
+              className="border p-2 rounded"
+              placeholder="Product Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Price ₹</label>
+            <input
+              className="border p-2 rounded w-28"
+              placeholder="Price"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Quantity</label>
+            <input
+              className="border p-2 rounded w-28"
+              placeholder="Quantity"
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Unit</label>
+            <select className="border p-2 rounded" value={unit} onChange={(e) => setUnit(e.target.value)}>
+              <option value="pieces">Pieces</option>
+              <option value="kg">KG</option>
+              <option value="grams">Grams</option>
+              <option value="liters">Liters</option>
+              <option value="ml">ML</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Category</label>
+            <select className="border p-2 rounded" value={category} onChange={(e) => setCategory(e.target.value)}>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-500 text-xs mb-1">Image (optional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="border p-2 rounded text-sm"
+              onChange={(e) => setImage(e.target.files[0])}
+            />
+          </div>
           <button onClick={addProduct} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             Add Product
           </button>
@@ -145,61 +168,73 @@ export default function Products() {
       </div>
 
       {/* Products Table */}
-      <table className="w-full bg-white shadow rounded">
-        <thead className="bg-gray-200">
-          <tr>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left">Category</th>
-            <th className="p-3 text-left">Price</th>
-            <th className="p-3 text-left">Stock</th>
-            <th className="p-3 text-left">Unit</th>
-            <th className="p-3 text-left">Status</th>
-            <th className="p-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginated.map((p) => (
-            <tr key={p._id} className="border-t">
-              <td className="p-3">{p.name}</td>
-              <td className="p-3">
-                <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs">
-                  {p.category || "General"}
-                </span>
-              </td>
-              <td className="p-3">₹ {p.price}</td>
-              <td className="p-3">{p.quantity} {p.unit || "pieces"}</td>
-              <td className="p-3 text-sm text-gray-500">{p.unit || "pieces"}</td>
-              <td className="p-3">
-                {p.quantity === 0 ? (
-                  <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm">Out of Stock</span>
-                ) : p.quantity < 5 ? (
-                  <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-sm">Low Stock</span>
-                ) : (
-                  <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-sm">In Stock</span>
-                )}
-              </td>
-              <td className="p-3">
-                {editingId === p._id ? (
-                  <div className="flex gap-2">
-                    <input className="border p-1 rounded w-20" type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} placeholder="Qty" />
-                    <input className="border p-1 rounded w-20" type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder="Price" />
-                    <button onClick={() => updateProduct(p._id)} className="bg-green-500 text-white px-2 py-1 rounded text-sm">Save</button>
-                    <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white px-2 py-1 rounded text-sm">Cancel</button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => { setEditingId(p._id); setEditQuantity(p.quantity); setEditPrice(p.price); }} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">Edit</button>
-                    <button onClick={() => deleteProduct(p._id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm">Delete</button>
-                  </div>
-                )}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full bg-white shadow rounded">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="p-3 text-left">Image</th>
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">Category</th>
+              <th className="p-3 text-left">Price</th>
+              <th className="p-3 text-left">Stock</th>
+              <th className="p-3 text-left">Unit</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Actions</th>
             </tr>
-          ))}
-          {paginated.length === 0 && (
-            <tr><td colSpan="7" className="p-4 text-center text-gray-400">No products found</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {paginated.map((p) => (
+              <tr key={p._id} className="border-t">
+                <td className="p-3">
+                  {p.image ? (
+                    <img src={p.image} alt={p.name} className="w-12 h-12 object-cover rounded" />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                      No img
+                    </div>
+                  )}
+                </td>
+                <td className="p-3 font-medium">{p.name}</td>
+                <td className="p-3">
+                  <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs">
+                    {p.category || "General"}
+                  </span>
+                </td>
+                <td className="p-3">₹ {p.price}</td>
+                <td className="p-3">{p.quantity} {p.unit || "pieces"}</td>
+                <td className="p-3 text-sm text-gray-500">{p.unit || "pieces"}</td>
+                <td className="p-3">
+                  {p.quantity === 0 ? (
+                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm">Out of Stock</span>
+                  ) : p.quantity < 5 ? (
+                    <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded text-sm">Low Stock</span>
+                  ) : (
+                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-sm">In Stock</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  {editingId === p._id ? (
+                    <div className="flex gap-2">
+                      <input className="border p-1 rounded w-20" type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} placeholder="Qty" />
+                      <input className="border p-1 rounded w-20" type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder="Price" />
+                      <button onClick={() => updateProduct(p._id)} className="bg-green-500 text-white px-2 py-1 rounded text-sm">Save</button>
+                      <button onClick={() => setEditingId(null)} className="bg-gray-400 text-white px-2 py-1 rounded text-sm">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditingId(p._id); setEditQuantity(p.quantity); setEditPrice(p.price); }} className="bg-blue-500 text-white px-3 py-1 rounded text-sm">Edit</button>
+                      <button onClick={() => deleteProduct(p._id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm">Delete</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {paginated.length === 0 && (
+              <tr><td colSpan="8" className="p-4 text-center text-gray-400">No products found</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (

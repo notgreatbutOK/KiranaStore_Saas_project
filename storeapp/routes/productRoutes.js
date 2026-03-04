@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const auth = require("../middleware/authMiddleware");
+const { upload } = require("../utils/cloudinary");
 
 // ADD PRODUCT
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, upload.single("image"), async (req, res) => {
   try {
     const product = await Product.create({
       name: req.body.name,
@@ -12,6 +13,7 @@ router.post("/", auth, async (req, res) => {
       quantity: req.body.quantity,
       unit: req.body.unit || "pieces",
       category: req.body.category || "General",
+      image: req.file?.path || null,
       owner: req.user,
     });
     res.json(product);

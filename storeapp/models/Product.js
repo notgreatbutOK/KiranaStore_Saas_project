@@ -12,6 +12,11 @@ const productSchema = new mongoose.Schema({
     enum: ["pieces", "kg", "grams", "liters", "ml"],
     default: "pieces"
   },
+
+  image: {
+  type: String,
+  default: null
+},
   category: {
     type: String,
     default: "General"
