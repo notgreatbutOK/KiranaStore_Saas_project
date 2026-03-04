@@ -11,7 +11,6 @@ export default function SuperAdminDashboard() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newMobile, setNewMobile] = useState("");
-  const [newPhoneNumberId, setNewPhoneNumberId] = useState("");
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -38,11 +37,11 @@ export default function SuperAdminDashboard() {
     try {
       await axios.post(
         "http://localhost:5000/api/superadmin/create-store",
-        { name: newName, email: newEmail, password: newPassword, mobileNumber: newMobile, whatsappPhoneNumberId: newPhoneNumberId },
+        { name: newName, email: newEmail, password: newPassword, mobileNumber: newMobile},
         { headers }
       );
       alert(`Store created! Share these creds:\nEmail: ${newEmail}\nPassword: ${newPassword}`);
-      setNewName(""); setNewEmail(""); setNewPassword(""); setNewMobile(""); setNewPhoneNumberId("");
+      setNewName(""); setNewEmail(""); setNewPassword(""); setNewMobile("");
       setShowCreateForm(false);
       fetchAll();
     } catch (err) {
@@ -179,16 +178,6 @@ export default function SuperAdminDashboard() {
                 placeholder="e.g. 15551941598"
                 value={newMobile}
                 onChange={(e) => setNewMobile(e.target.value)}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-600 mb-1">WhatsApp Phone Number ID</label>
-              <p className="text-gray-400 text-xs mb-1">From Meta Developer Dashboard</p>
-              <input
-                className="w-full border p-2 rounded"
-                placeholder="e.g. 1004266589438346"
-                value={newPhoneNumberId}
-                onChange={(e) => setNewPhoneNumberId(e.target.value)}
               />
             </div>
             <button

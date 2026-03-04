@@ -1,4 +1,5 @@
 require("dotenv").config();
+const sendMail = require("./utils/mailer");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -80,11 +81,11 @@ app.post("/webhook", async (req, res) => {
 
     const phoneStripped = from.startsWith("91") ? from.slice(2) : from;
 
-    const phoneNumberId = value?.metadata?.phone_number_id;
+    const displayPhone = value?.metadata?.display_phone_number?.replace(/\D/g, "");
     const store = await Admin.findOne({
       role: "store",
       status: "active",
-      whatsappPhoneNumberId: phoneNumberId
+      mobileNumber: displayPhone
     });
     if (!store) return;
     const storeId = store._id;
@@ -237,14 +238,38 @@ app.post("/webhook", async (req, res) => {
 
       const cart = sessions[from].cart;
       const grandTotal = sessions[from].grandTotal;
-
+//create order
       await Order.create({
         storeId,
         customerId: customer._id,
         paymentType: bodyLower,
         items: cart.map(i => ({ productId: i.productId, quantity: i.qty, price: i.price })),
-        totalAmount: grandTotal
-      });
+      totalAmount: grandTotal,
+      status: bodyLower === "cash" ? "delivered" : "pending"
+    });
+
+      // Notify store admin
+      try {
+        let itemsHtml = cart.map(i => `<li>${i.productName} x${i.qty} — ₹${i.total}</li>`).join("");
+        await sendMail(
+          store.email,
+          `🛒 New WhatsApp Order from ${customer.name}`,
+          `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>🛒 New WhatsApp Order!</h2>
+            <p><strong>Customer:</strong> ${customer.name}</p>
+            <p><strong>Phone:</strong> ${customer.phone}</p>
+            <h3>Items:</h3>
+            <ul>${itemsHtml}</ul>
+            <p><strong>Total:</strong> ₹${grandTotal}</p>
+            <p><strong>Payment:</strong> ${bodyLower === "cash" ? "💵 Cash" : "📒 Udhaar"}</p>
+            <p>Login to dashboard to update order status! 🙏</p>
+          </div>
+          `
+        );
+      } catch (e) {
+        console.log("WhatsApp order notification failed:", e.message);
+      }
 
       for (const item of cart) {
         await Product.findByIdAndUpdate(item.productId, { $inc: { quantity: -item.qty } });

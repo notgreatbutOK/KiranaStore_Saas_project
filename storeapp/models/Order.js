@@ -23,6 +23,11 @@ const orderSchema = new mongoose.Schema({
   paymentType: {
     type: String,
     enum: ["cash", "udhaar"]
+  },
+  status: {
+    type: String,
+    enum: ["pending", "delivered", "cancelled"],
+    default: "pending"
   }
 }, { timestamps: true });
 
