@@ -23,7 +23,7 @@ exports.sendMessage = async (to, text) => {
   }
 };
 
-exports.sendTemplate = async (to) => {
+exports.sendTemplate = async (to, templateName, components = []) => {
   try {
     await axios.post(
       `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -32,8 +32,14 @@ exports.sendTemplate = async (to) => {
         to,
         type: "template",
         template: {
-          name: "hello_world",
-          language: { code: "en_US" }
+          name: templateName,
+          language: { code: "en" },
+          components: components.length > 0 ? [
+            {
+              type: "body",
+              parameters: components
+            }
+          ] : []
         }
       },
       {
@@ -43,8 +49,8 @@ exports.sendTemplate = async (to) => {
         }
       }
     );
-    console.log("Template sent!");
+    console.log(`✅ Template sent to ${to}`);
   } catch (error) {
-    console.error(error.response?.data || error.message);
+    console.error("Template error:", error.response?.data || error.message);
   }
 };

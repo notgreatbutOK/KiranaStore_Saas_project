@@ -360,6 +360,41 @@ const startCronJobs = () => {
     }
   });
 
+  // Reorder reminder - runs every Monday, Tuesday, Thursday, Saturday at 10am:
+cron.schedule("0 10 * * 1,2,4,6", async () => {
+  console.log("Running reorder reminders...");
+  try {
+    const Customer = require("../models/Customer");
+    const { sendTemplate } = require("../services/whatsappService");
+    const stores = await Admin.find({ role: "store", status: "active" });
+
+    for (const store of stores) {
+      const customers = await Customer.find({ storeId: store._id });
+
+      for (const customer of customers) {
+        if (!customer.phone) continue;
+        try {
+          await sendTemplate(
+            `91${customer.phone}`,
+            "reorder_reminder",
+            [
+              { type: "text", text: customer.name },
+              { type: "text", text: store.name },
+              { type: "text", text: String(customer.totalDue || 0) }
+            ]
+          );
+          console.log(`Reorder reminder sent to ${customer.name}`);
+        } catch (e) {
+          console.log(`Reorder reminder failed for ${customer.name}:`, e.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.log("Reorder cron error:", err.message);
+  }
+});
+
+
   console.log("Cron jobs started!");
 };
 

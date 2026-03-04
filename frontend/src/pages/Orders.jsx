@@ -58,6 +58,21 @@ export default function Orders() {
     fetchAll();
   };
 
+  const markAsPaid = async (id) => {
+    if (!window.confirm("Mark this udhaar order as paid? This will clear the customer's due.")) return;
+    try {
+      await axios.patch(
+        `http://localhost:5000/api/orders/${id}/pay`,
+        {},
+        { headers }
+      );
+      alert("Payment recorded! Customer due updated ✅");
+      fetchAll();
+    } catch (err) {
+      alert(err.response?.data?.msg || "Failed to mark as paid");
+    }
+  };
+
   const printReceipt = () => window.print();
 
   const selectedProductData = products.find(p => p._id === selectedProduct);
@@ -169,6 +184,7 @@ export default function Orders() {
               <th className="p-3 text-left">Payment</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-left">Date</th>
+              <th className="p-3 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -207,6 +223,21 @@ export default function Orders() {
                 </td>
                 <td className="p-3 text-sm text-gray-500">
                   {new Date(o.createdAt).toLocaleDateString("en-IN")}
+                </td>
+                <td className="p-3">
+                  {o.paymentType === "udhaar" && !o.paid && (
+                    <button
+                      onClick={() => markAsPaid(o._id)}
+                      className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                    >
+                      💵 Mark Paid
+                    </button>
+                  )}
+                  {o.paid && (
+                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                      ✅ Paid
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
