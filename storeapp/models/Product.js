@@ -7,6 +7,15 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  unit: {
+    type: String,
+    enum: ["pieces", "kg", "grams", "liters", "ml"],
+    default: "pieces"
+  },
+  category: {
+    type: String,
+    default: "General"
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Admin",

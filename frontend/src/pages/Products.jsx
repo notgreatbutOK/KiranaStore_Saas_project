@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
 
+const CATEGORIES = ["General", "Groceries", "Dairy", "Meat & Fish", "Fruits & Vegetables", "Beverages", "Snacks", "Cleaning", "Personal Care"];
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("pieces");
+  const [category, setCategory] = useState("General");
   const [editingId, setEditingId] = useState(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [editPrice, setEditPrice] = useState("");
@@ -27,12 +32,13 @@ export default function Products() {
   }, []);
 
   const addProduct = async () => {
+    if (!name || !price || !quantity) return alert("Fill all fields!");
     await axios.post(
       "http://localhost:5000/api/products",
-      { name, price: Number(price), quantity: Number(quantity) },
+      { name, price: Number(price), quantity: Number(quantity), unit, category },
       { headers }
     );
-    setName(""); setPrice(""); setQuantity("");
+    setName(""); setPrice(""); setQuantity(""); setUnit("pieces"); setCategory("General");
     fetchProducts();
   };
 
@@ -52,9 +58,11 @@ export default function Products() {
     fetchProducts();
   };
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products.filter(p => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = categoryFilter === "All" || p.category === categoryFilter;
+    return matchSearch && matchCategory;
+  });
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice(
@@ -67,21 +75,73 @@ export default function Products() {
       <h2 className="text-2xl font-bold mb-6">Products</h2>
 
       {/* Add Product Form */}
-      <div className="flex gap-4 mb-6">
-        <input className="border p-2 rounded" placeholder="Product Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="border p-2 rounded" placeholder="Price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <input className="border p-2 rounded" placeholder="Quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-        <button onClick={addProduct} className="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+      <div className="bg-white shadow rounded p-4 mb-6">
+        <h3 className="font-bold mb-3">Add New Product</h3>
+        <div className="flex gap-3 flex-wrap">
+          <input
+            className="border p-2 rounded"
+            placeholder="Product Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded w-28"
+            placeholder="Price ₹"
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded w-28"
+            placeholder="Quantity"
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+          <select
+            className="border p-2 rounded"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+          >
+            <option value="pieces">Pieces</option>
+            <option value="kg">KG</option>
+            <option value="grams">Grams</option>
+            <option value="liters">Liters</option>
+            <option value="ml">ML</option>
+          </select>
+          <select
+            className="border p-2 rounded"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {CATEGORIES.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <button onClick={addProduct} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Add Product
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
+      {/* Search and Filter */}
+      <div className="flex gap-3 mb-4 flex-wrap">
         <input
           className="border p-2 rounded w-72"
           placeholder="🔍 Search products..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
         />
+        <select
+          className="border p-2 rounded"
+          value={categoryFilter}
+          onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+        >
+          <option value="All">All Categories</option>
+          {CATEGORIES.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
       </div>
 
       {/* Products Table */}
@@ -89,8 +149,10 @@ export default function Products() {
         <thead className="bg-gray-200">
           <tr>
             <th className="p-3 text-left">Name</th>
+            <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Price</th>
             <th className="p-3 text-left">Stock</th>
+            <th className="p-3 text-left">Unit</th>
             <th className="p-3 text-left">Status</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
@@ -99,8 +161,14 @@ export default function Products() {
           {paginated.map((p) => (
             <tr key={p._id} className="border-t">
               <td className="p-3">{p.name}</td>
+              <td className="p-3">
+                <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs">
+                  {p.category || "General"}
+                </span>
+              </td>
               <td className="p-3">₹ {p.price}</td>
-              <td className="p-3">{p.quantity}</td>
+              <td className="p-3">{p.quantity} {p.unit || "pieces"}</td>
+              <td className="p-3 text-sm text-gray-500">{p.unit || "pieces"}</td>
               <td className="p-3">
                 {p.quantity === 0 ? (
                   <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm">Out of Stock</span>
@@ -128,7 +196,7 @@ export default function Products() {
             </tr>
           ))}
           {paginated.length === 0 && (
-            <tr><td colSpan="5" className="p-4 text-center text-gray-400">No products found</td></tr>
+            <tr><td colSpan="7" className="p-4 text-center text-gray-400">No products found</td></tr>
           )}
         </tbody>
       </table>
@@ -163,7 +231,6 @@ export default function Products() {
           </button>
         </div>
       )}
-
     </Layout>
   );
 }

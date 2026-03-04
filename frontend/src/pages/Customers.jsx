@@ -7,6 +7,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
@@ -19,8 +20,9 @@ export default function Customers() {
   useEffect(() => { fetchCustomers(); }, []);
 
   const addCustomer = async () => {
-    await axios.post("http://localhost:5000/api/customers", { name, phone }, { headers });
-    setName(""); setPhone("");
+    if (!name || !phone) return alert("Name and phone are required!");
+    await axios.post("http://localhost:5000/api/customers", { name, phone, email }, { headers });
+    setName(""); setPhone(""); setEmail("");
     fetchCustomers();
   };
 
@@ -39,10 +41,31 @@ export default function Customers() {
     <Layout>
       <h2 className="text-2xl font-bold mb-6">Customers</h2>
 
-      <div className="flex gap-4 mb-6">
-        <input className="border p-2 rounded" placeholder="Customer Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="border p-2 rounded" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <button onClick={addCustomer} className="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
+      <div className="bg-white shadow rounded p-4 mb-6">
+        <h3 className="font-bold mb-3">Add New Customer</h3>
+        <div className="flex gap-3 flex-wrap">
+          <input
+            className="border p-2 rounded"
+            placeholder="Customer Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded"
+            placeholder="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          <input
+            className="border p-2 rounded"
+            placeholder="Email (optional)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button onClick={addCustomer} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -60,6 +83,7 @@ export default function Customers() {
           <tr>
             <th className="p-3 text-left">Name</th>
             <th className="p-3 text-left">Phone</th>
+            <th className="p-3 text-left">Email</th>
             <th className="p-3 text-left">Total Due</th>
             <th className="p-3 text-left">Action</th>
           </tr>
@@ -69,6 +93,7 @@ export default function Customers() {
             <tr key={c._id} className="border-t">
               <td className="p-3">{c.name}</td>
               <td className="p-3">{c.phone}</td>
+              <td className="p-3 text-gray-500 text-sm">{c.email || "-"}</td>
               <td className="p-3 font-bold text-red-500">{c.totalDue > 0 ? `₹ ${c.totalDue}` : "-"}</td>
               <td className="p-3">
                 <button onClick={() => deleteCustomer(c._id)} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Delete</button>
@@ -76,7 +101,7 @@ export default function Customers() {
             </tr>
           ))}
           {filtered.length === 0 && (
-            <tr><td colSpan="4" className="p-4 text-center text-gray-400">No customers found</td></tr>
+            <tr><td colSpan="5" className="p-4 text-center text-gray-400">No customers found</td></tr>
           )}
         </tbody>
       </table>

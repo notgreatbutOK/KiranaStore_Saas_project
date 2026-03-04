@@ -7,6 +7,10 @@ const customerSchema = new mongoose.Schema({
   },
   name: String,
   phone: String,
+  email: {
+    type: String,
+    default: null
+  },
   totalDue: {
     type: Number,
     default: 0
