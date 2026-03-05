@@ -9,6 +9,8 @@ import Udhaar from "./pages/Udhaar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TrialExpired from "./pages/TrialExpired";
 import StoreDetails from "./pages/StoreDetails";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
 
 function App() {
   return (
@@ -17,7 +19,8 @@ function App() {
 
         <Route path="/trial-expired" element={<TrialExpired />} />
         <Route path="/" element={<Login />} />
-       
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/payment-failure" element={<PaymentFailure />} />
 
         {/* Store Routes */}
         <Route path="/dashboard" element={
@@ -60,8 +63,8 @@ function App() {
         <Route path="/superadmin/store/:storeId" element={
           <ProtectedRoute role="superadmin">
             <StoreDetails />
-            </ProtectedRoute>
-          } />
+          </ProtectedRoute>
+        } />
 
       </Routes>
     </BrowserRouter>
