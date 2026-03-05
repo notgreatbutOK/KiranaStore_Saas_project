@@ -165,4 +165,55 @@ router.patch("/removeplan/:storeId", auth, superAdmin, async (req, res) => {
   }
 });
 
+// Graph data for super admin
+router.get("/graphdata", auth, superAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const allStores = await Admin.find({ role: "store" });
+
+    // New stores per month (last 6 months)
+    const storesPerMonth = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const month = date.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+      const start = new Date(date.getFullYear(), date.getMonth(), 1);
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+      const count = allStores.filter(s => new Date(s.createdAt) >= start && new Date(s.createdAt) < end).length;
+      storesPerMonth.push({ month, stores: count });
+    }
+
+    // Trial vs Subscribed
+    const trialCount = allStores.filter(s => s.subscriptionPlan === "trial").length;
+    const subscribedCount = allStores.filter(s => ["1month", "3months", "6months", "1year"].includes(s.subscriptionPlan)).length;
+    const planSplit = [
+      { name: "Trial", value: trialCount },
+      { name: "Subscribed", value: subscribedCount }
+    ];
+
+    // Revenue per month (last 6 months)
+    const revenuePerMonth = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const month = date.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+      const start = new Date(date.getFullYear(), date.getMonth(), 1);
+      const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+      const orders = await Order.find({ paymentType: "cash", createdAt: { $gte: start, $lt: end } });
+      const revenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+      revenuePerMonth.push({ month, revenue });
+    }
+
+    // Store status split
+    const statusSplit = [
+      { name: "Active", value: allStores.filter(s => s.status === "active").length },
+      { name: "Suspended", value: allStores.filter(s => s.status === "suspended").length },
+      { name: "Pending", value: allStores.filter(s => s.status === "pending").length }
+    ];
+
+    res.json({ storesPerMonth, planSplit, revenuePerMonth, statusSplit });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 module.exports = router;

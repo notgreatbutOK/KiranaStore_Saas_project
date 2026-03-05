@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Layout from "../components/Layout";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, Legend
+} from "recharts";
+
+const COLORS = ["#22c55e", "#ef4444"];
 
 export default function StoreDashboard() {
   const [stats, setStats] = useState(null);
@@ -8,6 +14,7 @@ export default function StoreDashboard() {
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [subscription, setSubscription] = useState(null);
+
   const planPrices = {
     "1month": 499,
     "3months": 1299,
@@ -23,103 +30,93 @@ export default function StoreDashboard() {
   }, []);
 
   const fetchAll = async () => {
-  try {
-    const [dashRes, productRes, customerRes, orderRes, subRes] = await Promise.all([
-      axios.get("http://localhost:5000/api/dashboard", { headers }),
-      axios.get("http://localhost:5000/api/products", { headers }),
-      axios.get("http://localhost:5000/api/customers", { headers }),
-      axios.get("http://localhost:5000/api/orders", { headers }),
-      axios.get("http://localhost:5000/api/payment/subscription", { headers }),
-    ]);
+    try {
+      const [dashRes, productRes, customerRes, orderRes, subRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/dashboard", { headers }),
+        axios.get("http://localhost:5000/api/products", { headers }),
+        axios.get("http://localhost:5000/api/customers", { headers }),
+        axios.get("http://localhost:5000/api/orders", { headers }),
+        axios.get("http://localhost:5000/api/payment/subscription", { headers }),
+      ]);
+      setStats(dashRes.data);
+      setProducts(productRes.data);
+      setCustomers(customerRes.data);
+      setOrders(orderRes.data);
+      setSubscription(subRes.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-    setStats(dashRes.data);
-    setProducts(productRes.data);
-    setCustomers(customerRes.data);
-    setOrders(orderRes.data);
-    setSubscription(subRes.data);
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-const initiatePayment = async (plan) => {
-  try {
-    const res = await axios.post(
-      "http://localhost:5000/api/payment/initiate",
-      { plan },
-      { headers }
-    );
-
-    const params = res.data;
-
-    // Create and submit form to PayU
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = params.action;
-
-    Object.keys(params).forEach(key => {
-      if (key === "action") return;
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = params[key];
-      form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
-  } catch (err) {
-    alert("Payment initiation failed!");
-  }
-};
+  const initiatePayment = async (plan) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/payment/initiate",
+        { plan },
+        { headers }
+      );
+      const params = res.data;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = params.action;
+      Object.keys(params).forEach(key => {
+        if (key === "action") return;
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = params[key];
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      alert("Payment initiation failed!");
+    }
+  };
 
   return (
     <Layout>
       <h2 className="text-2xl font-bold mb-6">🏪 Store Dashboard</h2>
 
       {/* Subscription Banner */}
-{subscription && (
-  <div className={`rounded p-4 mb-6 ${
-    subscription.plan === "trial"
-      ? "bg-yellow-50 border border-yellow-300"
-      : "bg-green-50 border border-green-300"
-  }`}>
-    <div className="flex justify-between items-center flex-wrap gap-4">
-      <div>
-        {subscription.plan === "trial" ? (
-          <>
-            <h3 className="font-bold text-yellow-700">⏳ Trial Plan</h3>
-            <p className="text-yellow-600 text-sm">
-              {subscription.daysLeft > 0
-                ? `${subscription.daysLeft} days remaining`
-                : "Trial expired!"}
-            </p>
-          </>
-        ) : (
-          <>
-            <h3 className="font-bold text-green-700">✅ {subscription.plan} Plan Active</h3>
-            <p className="text-green-600 text-sm">
-              Valid till {new Date(subscription.endDate).toLocaleDateString("en-IN")}
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* Plan selection */}
-      <div className="flex gap-2 flex-wrap">
-        {Object.entries(planPrices).map(([plan, price]) => (
-          <button
-            key={plan}
-            onClick={() => initiatePayment(plan)}
-            className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
-          >
-            {plan} — ₹{price}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
+      {subscription && (
+        <div className={`rounded p-4 mb-6 ${
+          subscription.plan === "trial"
+            ? "bg-yellow-50 border border-yellow-300"
+            : "bg-green-50 border border-green-300"
+        }`}>
+          <div className="flex justify-between items-center flex-wrap gap-4">
+            <div>
+              {subscription.plan === "trial" ? (
+                <>
+                  <h3 className="font-bold text-yellow-700">⏳ Trial Plan</h3>
+                  <p className="text-yellow-600 text-sm">
+                    {subscription.daysLeft > 0 ? `${subscription.daysLeft} days remaining` : "Trial expired!"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-bold text-green-700">✅ {subscription.plan} Plan Active</h3>
+                  <p className="text-green-600 text-sm">
+                    Valid till {new Date(subscription.endDate).toLocaleDateString("en-IN")}
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {Object.entries(planPrices).map(([plan, price]) => (
+                <button
+                  key={plan}
+                  onClick={() => initiatePayment(plan)}
+                  className="bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+                >
+                  {plan} — ₹{price}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Stats */}
       <div className="flex gap-6 mb-8 flex-wrap">
@@ -149,6 +146,83 @@ const initiatePayment = async (plan) => {
         </div>
       )}
 
+      {/* Graphs Row 1 */}
+      <div className="grid grid-cols-2 gap-6 mb-6">
+
+        {/* Weekly Revenue Line Chart */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">📈 Revenue This Week</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={stats?.weeklyRevenue || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip formatter={(value) => `₹${value}`} />
+              <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Cash vs Udhaar Pie Chart */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">🍩 Cash vs Udhaar</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={stats?.paymentSplit || []}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {(stats?.paymentSplit || []).map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Legend />
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+      </div>
+
+      {/* Graphs Row 2 */}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+
+        {/* Top Selling Products Bar Chart */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">🏆 Top Selling Products</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats?.topProducts?.map(p => ({ name: p.product?.name, sold: p.totalSold })) || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="sold" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Stock Levels Bar Chart */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">📦 Stock Levels</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats?.stockLevels?.map(p => ({ name: p.name, stock: p.quantity })) || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="stock" fill="#22c55e" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+      </div>
+
+      {/* Recent Orders and Pending Udhaar */}
       <div className="grid grid-cols-2 gap-6 mb-8">
 
         {/* Recent Orders */}
@@ -172,9 +246,7 @@ const initiatePayment = async (plan) => {
                     <td className="p-2 text-sm">₹ {o.totalAmount}</td>
                     <td className="p-2 text-sm capitalize">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        o.paymentType === "cash"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-red-100 text-red-600"
+                        o.paymentType === "cash" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
                       }`}>
                         {o.paymentType}
                       </span>
@@ -186,24 +258,26 @@ const initiatePayment = async (plan) => {
           )}
         </div>
 
-        {/* Top Selling Products */}
+        {/* Pending Udhaar Table */}
         <div className="bg-white shadow rounded p-4">
-          <h3 className="font-bold text-lg mb-4">🏆 Top Selling Products</h3>
-          {stats?.topProducts?.length === 0 ? (
-            <p className="text-gray-400">No sales yet</p>
+          <h3 className="font-bold text-lg mb-4">💸 Pending Udhaar</h3>
+          {customers.filter(c => c.totalDue > 0).length === 0 ? (
+            <p className="text-gray-400">No pending udhaar</p>
           ) : (
             <table className="w-full">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="p-2 text-left text-sm">Product</th>
-                  <th className="p-2 text-left text-sm">Sold</th>
+                  <th className="p-2 text-left text-sm">Customer</th>
+                  <th className="p-2 text-left text-sm">Phone</th>
+                  <th className="p-2 text-left text-sm">Amount Due</th>
                 </tr>
               </thead>
               <tbody>
-                {stats?.topProducts?.map((p) => (
-                  <tr key={p._id} className="border-t">
-                    <td className="p-2 text-sm">{p.product?.name}</td>
-                    <td className="p-2 text-sm font-bold">{p.totalSold} units</td>
+                {customers.filter(c => c.totalDue > 0).map((c) => (
+                  <tr key={c._id} className="border-t">
+                    <td className="p-2 text-sm">{c.name}</td>
+                    <td className="p-2 text-sm">{c.phone}</td>
+                    <td className="p-2 text-sm font-bold text-red-500">₹ {c.totalDue}</td>
                   </tr>
                 ))}
               </tbody>
@@ -211,35 +285,6 @@ const initiatePayment = async (plan) => {
           )}
         </div>
 
-      </div>
-
-      {/* Pending Udhaar Table */}
-      <div className="bg-white shadow rounded p-4">
-        <h3 className="font-bold text-lg mb-4">💸 Pending Udhaar</h3>
-        {customers.filter(c => c.totalDue > 0).length === 0 ? (
-          <p className="text-gray-400">No pending udhaar</p>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 text-left text-sm">Customer</th>
-                <th className="p-2 text-left text-sm">Phone</th>
-                <th className="p-2 text-left text-sm">Amount Due</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers
-                .filter(c => c.totalDue > 0)
-                .map((c) => (
-                  <tr key={c._id} className="border-t">
-                    <td className="p-2 text-sm">{c.name}</td>
-                    <td className="p-2 text-sm">{c.phone}</td>
-                    <td className="p-2 text-sm font-bold text-red-500">₹ {c.totalDue}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        )}
       </div>
 
     </Layout>

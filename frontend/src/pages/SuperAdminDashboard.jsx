@@ -2,10 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Layout from "../components/Layout";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, Legend
+} from "recharts";
+
+const COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444"];
 
 export default function SuperAdminDashboard() {
   const [stores, setStores] = useState([]);
   const [revenue, setRevenue] = useState(0);
+  const [graphData, setGraphData] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -21,12 +28,14 @@ export default function SuperAdminDashboard() {
 
   const fetchAll = async () => {
     try {
-      const [storesRes, revenueRes] = await Promise.all([
+      const [storesRes, revenueRes, graphRes] = await Promise.all([
         axios.get("http://localhost:5000/api/superadmin/stores", { headers }),
         axios.get("http://localhost:5000/api/superadmin/revenue", { headers }),
+        axios.get("http://localhost:5000/api/superadmin/graphdata", { headers }),
       ]);
       setStores(storesRes.data);
       setRevenue(revenueRes.data.totalRevenue || 0);
+      setGraphData(graphRes.data);
     } catch (err) {
       console.log(err);
     }
@@ -37,7 +46,7 @@ export default function SuperAdminDashboard() {
     try {
       await axios.post(
         "http://localhost:5000/api/superadmin/create-store",
-        { name: newName, email: newEmail, password: newPassword, mobileNumber: newMobile},
+        { name: newName, email: newEmail, password: newPassword, mobileNumber: newMobile },
         { headers }
       );
       alert(`Store created! Share these creds:\nEmail: ${newEmail}\nPassword: ${newPassword}`);
@@ -64,11 +73,7 @@ export default function SuperAdminDashboard() {
   const activateSubscription = async (id, plan) => {
     if (!window.confirm(`Activate ${plan} subscription for this store?`)) return;
     try {
-      await axios.patch(
-        `http://localhost:5000/api/superadmin/subscribe/${id}`,
-        { plan },
-        { headers }
-      );
+      await axios.patch(`http://localhost:5000/api/superadmin/subscribe/${id}`, { plan }, { headers });
       alert(`${plan} subscription activated!`);
       fetchAll();
     } catch (err) {
@@ -79,11 +84,7 @@ export default function SuperAdminDashboard() {
   const removePlan = async (id) => {
     if (!window.confirm("Remove plan and reset to trial?")) return;
     try {
-      await axios.patch(
-        `http://localhost:5000/api/superadmin/removeplan/${id}`,
-        {},
-        { headers }
-      );
+      await axios.patch(`http://localhost:5000/api/superadmin/removeplan/${id}`, {}, { headers });
       alert("Plan removed!");
       fetchAll();
     } catch (err) {
@@ -145,45 +146,21 @@ export default function SuperAdminDashboard() {
             <h3 className="font-bold text-lg mb-4">Create New Store</h3>
             <div className="mb-3">
               <label className="block text-gray-600 mb-1">Store Name</label>
-              <input
-                className="w-full border p-2 rounded"
-                placeholder="Store name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
+              <input className="w-full border p-2 rounded" placeholder="Store name" value={newName} onChange={(e) => setNewName(e.target.value)} />
             </div>
             <div className="mb-3">
               <label className="block text-gray-600 mb-1">Email</label>
-              <input
-                className="w-full border p-2 rounded"
-                placeholder="store@email.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
+              <input className="w-full border p-2 rounded" placeholder="store@email.com" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             </div>
             <div className="mb-3">
               <label className="block text-gray-600 mb-1">Password</label>
-              <input
-                className="w-full border p-2 rounded"
-                type="password"
-                placeholder="Set a password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+              <input className="w-full border p-2 rounded" type="password" placeholder="Set a password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             </div>
             <div className="mb-3">
               <label className="block text-gray-600 mb-1">Mobile Number</label>
-              <input
-                className="w-full border p-2 rounded"
-                placeholder="e.g. 15551941598"
-                value={newMobile}
-                onChange={(e) => setNewMobile(e.target.value)}
-              />
+              <input className="w-full border p-2 rounded" placeholder="e.g. 15551941598" value={newMobile} onChange={(e) => setNewMobile(e.target.value)} />
             </div>
-            <button
-              onClick={createStore}
-              className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 w-full"
-            >
+            <button onClick={createStore} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 w-full">
               Create Store
             </button>
           </div>
@@ -199,6 +176,92 @@ export default function SuperAdminDashboard() {
         <StatCard title="On Trial" value={trialStores} color="purple" />
         <StatCard title="Subscribed" value={subscribedStores} color="green" />
         <StatCard title="Platform Revenue" value={`₹ ${revenue}`} color="yellow" />
+      </div>
+
+      {/* Graphs Row 1 */}
+      <div className="grid grid-cols-2 gap-6 mb-6">
+
+        {/* New Stores Per Month */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">📈 New Stores Per Month</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={graphData?.storesPerMonth || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="stores" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Trial vs Subscribed */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">🍩 Trial vs Subscribed</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={(graphData?.planSplit || []).filter(s => s.value > 0)}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {(graphData?.planSplit || []).filter(s => s.value > 0).map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Legend />
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+      </div>
+
+      {/* Graphs Row 2 */}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+
+        {/* Revenue Per Month */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">💰 Revenue Per Month</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={graphData?.revenuePerMonth || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => `₹${value}`} />
+              <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Store Status Split */}
+        <div className="bg-white shadow rounded p-4">
+          <h3 className="font-bold text-lg mb-4">🏪 Store Status</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={(graphData?.statusSplit || []).filter(s => s.value > 0)}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {(graphData?.statusSplit || []).filter(s => s.value > 0).map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Legend />
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
       </div>
 
       {/* Stores Table */}
@@ -219,10 +282,7 @@ export default function SuperAdminDashboard() {
             {stores.map((store) => (
               <tr key={store._id} className="border-t hover:bg-gray-50">
                 <td className="p-4 font-medium">
-                  <button
-                    onClick={() => navigate(`/superadmin/store/${store._id}`)}
-                    className="text-blue-600 hover:underline"
-                  >
+                  <button onClick={() => navigate(`/superadmin/store/${store._id}`)} className="text-blue-600 hover:underline">
                     {store.name}
                   </button>
                 </td>
